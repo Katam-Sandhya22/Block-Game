@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Bird vs Trees</title>
+    <style>
+        body {
+            margin: 0;
+            background: #222;
+            color: white;
+            font-family: sans-serif;
+            text-align: center;
+            overflow: hidden;
+        }
+        
+        canvas {
+            background: #70c5ce;
+            display: block;
+            margin: 20px auto;
+            border: 5px solid #fff;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        .stats {
+            font-size: 24px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="stats">Score: <span id="s">0</span> | Best: <span id="h">0</span></div>
+    <canvas id="c" width="320" height="480"></canvas>
+    <p>Press <b>SPACE</b> or <b>CLICK</b> to fly</p>
+
+    <script>
+        const canvas = document.getElementById('c'),
+            ctx = canvas.getContext('2d');
+        let bird = 200,
+            v = 0,
+            score = 0,
+            pipes = [],
+            over = false;
+        let high = localStorage.getItem('best_score') || 0;
+        document.getElementById('h').innerText = high;
+
+        const flap = () => {
+            if (over) reset();
+            else v = -5.5;
+        };
+        window.onmousedown = flap;
+        window.onkeydown = (e) => {
+            if (e.code === 'Space') flap();
+        };
+
+        function reset() {
+            bird = 200;
+            v = 0;
+            score = 0;
+            pipes = [];
+            over = false;
+            document.getElementById('s').innerText = 0;
+            loop();
+        }
+
+        function loop() {
+            if (over) return;
+            v += 0.25;
+            bird += v; // Physics
+            ctx.clearRect(0, 0, 320, 480);
+
+            // Draw Bird
+            ctx.fillStyle = '#f1c40f';
+            ctx.fillRect(50, bird, 25, 25);
+
+            // Pipe Logic
+            if (pipes.length === 0 || pipes[pipes.length - 1].x < 150) {
+                pipes.push({
+                    x: 320,
+                    y: Math.random() * 200 + 50
+                });
+            }
+
+            pipes.forEach((p, i) => {
+                p.x -= 2;
+                ctx.fillStyle = '#2ecc71';
+                ctx.fillRect(p.x, 0, 45, p.y); // Top Tree
+                ctx.fillRect(p.x, p.y + 125, 45, 480); // Bottom Tree
+
+                // Collision
+                if (50 + 25 > p.x && 50 < p.x + 45) {
+                    if (bird < p.y || bird + 25 > p.y + 125) over = true;
+                }
+
+                // Scoring
+                if (p.x === 50) {
+                    score++;
+                    document.getElementById('s').innerText = score;
+                }
+                if (p.x < -50) pipes.splice(i, 1);
+            });
+
+            if (bird > 480 || bird < 0) over = true;
+
+            if (over) {
+                if (score > high) {
+                    high = score;
+                    localStorage.setItem('best_score', high);
+                    document.getElementById('h').innerText = high;
+                }
+                ctx.fillStyle = "rgba(0,0,0,0.6)";
+                ctx.fillRect(0, 0, 320, 480);
+                ctx.fillStyle = "white";
+                ctx.font = "bold 20px Arial";
+                ctx.fillText("GAME OVER", 100, 220);
+                ctx.font = "16px Arial";
+                ctx.fillText("Click to Restart", 105, 260);
+            } else {
+                requestAnimationFrame(loop);
+            }
+        }
+        loop();
+    </script>
+</body>
+
+</html>
